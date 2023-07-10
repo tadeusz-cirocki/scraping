@@ -2,12 +2,10 @@ const axios = require('axios');
 const cheerio = require('cheerio');
 const createCsvWriter = require('csv-writer').createObjectCsvWriter;
 
-const currentYear = new Date().getFullYear();
-
-// Function to scrape movies from filmweb from a a given platform
-const scrapeMovies = async (platform) => {
+// Function to scrape top rated movies from filmweb from a a given platform from a given year
+const scrapeMovies = async (platform, year) => {
     try {
-        const url = `https://www.filmweb.pl/ranking/vod/${platform}/film/${currentYear}`
+        const url = `https://www.filmweb.pl/ranking/vod/${platform}/film/${year}`
         const response = await axios.get(url);
         const html = response.data;
         const $ = cheerio.load(html);
@@ -30,23 +28,12 @@ const scrapeMovies = async (platform) => {
     }
 };
 
-/*
-I've decided to hardcode names for the top 4 platforms because these are not changing often or at all. 
-It saves us 1 initial request that would have to be completed before others.
-To add new platform:
-    go to https://www.filmweb.pl/ranking/vod/netflix/film
-    click on platform of choice icon
-    see how is it named in the URL
-e.g prime video is "amazon" in the filmweb URL
-*/
-const platforms = ["netflix", "hbo_max", "canal_plus_manual", "disney"];
-
-// Scrape movies from all platforms
-const scrapeAllMovies = async () => {
+// Scrape movies from given platforms and year
+const scrapeAllMovies = async (platforms, year) => {
     const allMovies = [];
 
     // Execute promises concurrently
-    const results = await Promise.all(platforms.map(platform => scrapeMovies(platform)));
+    const results = await Promise.all(platforms.map(platform => scrapeMovies(platform, year)));
 
     // Combine the results into a single array
     results.forEach(movies => {
@@ -73,7 +60,19 @@ const scrapeAllMovies = async () => {
     return sortedMovies;
 };
 
-scrapeAllMovies()
+/*
+I've decided to hardcode names for the top 4 platforms because these are not changing often or at all. 
+It saves us 1 initial request that would have to be completed before others.
+To add new platform:
+    go to https://www.filmweb.pl/ranking/vod/netflix/film
+    click on platform of choice icon
+    see how is it named in the URL
+e.g prime video is "amazon" in the filmweb URL
+*/
+const platforms = ["netflix", "hbo_max", "canal_plus_manual", "disney"];
+const currentYear = new Date().getFullYear();   // can be changed here for e.g. 2020
+
+scrapeAllMovies(platforms, currentYear)
     .then(movies => {
         const csvWriter = createCsvWriter({
             path: 'movies.csv',
