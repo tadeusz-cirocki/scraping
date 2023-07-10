@@ -45,13 +45,8 @@ const platforms = ["netflix", "hbo_max", "canal_plus_manual", "disney"];
 const scrapeAllMovies = async () => {
     const allMovies = [];
 
-    // Create an array of promises for scraping movies
-    const promises = platforms.map(platform => {
-        return scrapeMovies(platform);
-    });
-
-    // Execute all promises concurrently using Promise.all
-    const results = await Promise.all(promises);
+    // Execute promises concurrently
+    const results = await Promise.all(platforms.map(platform => scrapeMovies(platform)));
 
     // Combine the results into a single array
     results.forEach(movies => {
@@ -78,11 +73,21 @@ const scrapeAllMovies = async () => {
     return sortedMovies;
 };
 
-
-// Run the scraping function
 scrapeAllMovies()
     .then(movies => {
-        console.log(movies);
+        const csvWriter = createCsvWriter({
+            path: 'movies.csv',
+            header: [
+                { id: 'title', title: 'Title' },
+                { id: 'platform', title: 'VOD Service Name' },
+                { id: 'rating', title: 'Rating' }
+            ]
+        });
+
+        return csvWriter.writeRecords(movies);
+    })
+    .then(() => {
+        console.log('CSV file has been written successfully');
     })
     .catch(error => {
         console.error('Error:', error);
